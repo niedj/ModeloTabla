@@ -56,7 +56,18 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         }
     }
 
-    public static <T extends ConvierteAVector>AbstractTableModel crearModelo(List<T> datos, JTable table) {
+    /**
+     * Creates a new TableSorter object with the given data and sets it to the JTable
+     * @param <T>
+     * @param datos
+     * @param table
+     * @return 
+     * @throws IllegalArgumentException if the parameter table==null
+     */
+    public static <T extends ConvierteAVector> AbstractTableModel crearModelo(List<T> datos, JTable table) {
+        if (table == null) {
+            throw new IllegalArgumentException("The given jTable has not been initialized");
+        }
         Modelo<? extends ConvierteAVector> m;
         if (datos != null && !datos.isEmpty()) {
             m = new Modelo<T>(datos);
@@ -75,7 +86,18 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         return tableSorter;
     }
 
-    public static <T extends ConvierteAVector>AbstractTableModel crearModeloSinSorter(List<T> datos, JTable table) {
+    /**
+     * Creates a new TableModel (no sorter) object with the given data and sets it to the JTable
+     * @param <T>
+     * @param datos
+     * @param table
+     * @return 
+     * @throws IllegalArgumentException if the parameter table==null
+     */
+    public static <T extends ConvierteAVector> AbstractTableModel crearModeloSinSorter(List<T> datos, JTable table) {
+        if (table == null) {
+            throw new IllegalArgumentException("The given jTable has not been initialized");
+        }
         Modelo<? extends ConvierteAVector> m;
         if (datos != null && !datos.isEmpty()) {
             m = new Modelo<T>(datos);
@@ -93,6 +115,10 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         return m;
     }
 
+    /**
+     * Automatically adjusts the table's colums size to the data lenght
+     * @param table 
+     */
     public static void autoResizeColWidth(JTable table) {
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         Component parent = table.getParent();
@@ -164,6 +190,9 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int row, int column) {
+        if (getDatos().get(row).getDatos().size() != getDatos().get(row).getTitulos().size()) {
+            throw new IllegalArgumentException("Lists datos and titulos have different sizes for row: " + row + ", check getDatos and getTitulos implemented methods");
+        }
         return getDatos().get(row).getDatos().get(column);
     }
 
@@ -197,6 +226,12 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         this.cellEditable = editable;
     }
 
+    /**
+     * Modifies the original model to display only the values that matches the filter (Does not affect the data)
+     * @param filtro The text to use as filter
+     * @param col The column to check for the condition
+     * @param modelo Table's model (use table.getModel() method)
+     */
     public static void filtrar(String filtro, int col, AbstractTableModel modelo) {
         TableSorter ts = (TableSorter) modelo;
         Modelo<ConvierteAVector> m = (Modelo) ts.getTableModel();
@@ -222,6 +257,10 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         }
     }
 
+    /**
+     * Removes the filter and displays the original data
+     * @param modelo 
+     */
     private static void removerFiltro(AbstractTableModel modelo) {
         Modelo<ConvierteAVector> m = (Modelo) modelo;
         m.setPrimeraVez(true);
