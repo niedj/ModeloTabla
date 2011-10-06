@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
@@ -68,22 +69,50 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         if (table == null) {
             throw new IllegalArgumentException("The given jTable has not been initialized");
         }
-        Modelo<? extends ConvierteAVector> m;
-        if (datos != null && !datos.isEmpty()) {
-            m = new Modelo<T>(datos);
+        if (table.getModel() != null && table.getModel() instanceof TableSorter) {
+            int currentColumnCount = table.getColumnCount();
+            ListSelectionModel lsm = table.getSelectionModel();
+            int firstSelectedRow = lsm.getMinSelectionIndex();
+            int lastSelectedRow = lsm.getMaxSelectionIndex();
+            TableSorter sorter = (TableSorter) table.getModel();
+            Modelo model = (Modelo) sorter.getTableModel();
+            if (datos == null || datos.isEmpty()) {
+                listaVacia = new ArrayList<ConvierteAVector>();
+                listaVacia.add(datosNulos);
+                model.setDatos(listaVacia);
+                model.setTodos(listaVacia);
+                model.setColumnas(listaVacia.get(0).getTitulos());
+            } else {
+                model.setDatos(datos);
+                model.setTodos(datos);
+                model.setColumnas(datos.get(0).getTitulos());
+            }
+            int newColumnCount = model.getColumnCount();
+            if (currentColumnCount != newColumnCount) {
+                model.fireTableStructureChanged();
+            } else {
+                model.fireTableDataChanged();
+                lsm.setSelectionInterval(firstSelectedRow, lastSelectedRow);
+            }
+            return model;
         } else {
-            listaVacia = new ArrayList<ConvierteAVector>();
-            listaVacia.add(datosNulos);
-            m = new Modelo<ConvierteAVector>(listaVacia);
+            Modelo<? extends ConvierteAVector> m;
+            if (datos != null && !datos.isEmpty()) {
+                m = new Modelo<T>(datos);
+            } else {
+                listaVacia = new ArrayList<ConvierteAVector>();
+                listaVacia.add(datosNulos);
+                m = new Modelo<ConvierteAVector>(listaVacia);
+            }
+            TableSorter tableSorter = new TableSorter(m, table.getTableHeader());
+            table.setModel(tableSorter);
+            if (table.getColumnCount() > 1) {
+                autoResizeColWidth(table);
+            } else {
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            }
+            return tableSorter;
         }
-        TableSorter tableSorter = new TableSorter(m, table.getTableHeader());
-        table.setModel(tableSorter);
-        if (table.getColumnCount() > 1) {
-            autoResizeColWidth(table);
-        } else {
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        }
-        return tableSorter;
     }
 
     /**

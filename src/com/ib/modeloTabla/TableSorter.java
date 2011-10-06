@@ -2,6 +2,9 @@ package com.ib.modeloTabla;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.DateFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.List;
 
@@ -54,12 +57,17 @@ import javax.swing.table.*;
  * <p/>
  * This is a long overdue rewrite of a class of the same name that
  * first appeared in the swing table demos in 1997.
- *
  * @author Philip Milne
  * @author Brendon McLean
  * @author Dan van Enckevort
  * @author Parwinder Sekhon
- * @version 2.0 02/27/04
+ *  ********************************************************************************************
+ * I found this class searching for a way to sort tables and found it very useful so I started 
+ * using it and made some changes to adapt it for my needs
+ * To respect the original authors I give all the credit to them, only certain modifications are mine
+ * Federico Saravia Barrantes
+ * Original version: 2.0 02/27/04
+ * @version 2.0 10/05/11
  */
 public final class TableSorter extends AbstractTableModel {
 
@@ -68,19 +76,25 @@ public final class TableSorter extends AbstractTableModel {
     public static final int NOT_SORTED = 0;
     public static final int ASCENDING = 1;
     private static Directive EMPTY_DIRECTIVE = new Directive(-1, NOT_SORTED);
-    public static final Comparator<Object> COMPARABLE_COMAPRATOR = new Comparator<Object>() {
+    private static final Comparator<Number> NUMBER_COMPARATOR = new Comparator<Number>() {
 
         @Override
-        public int compare(Object o1, Object o2) {
-            Comparable<Object> c = (Comparable<Object>) o1;
-            return c.compareTo(o2);
+        public int compare(Number o1, Number o2) {
+            return (int) (o1.doubleValue() - o2.doubleValue());
         }
     };
-    public static final Comparator<Object> LEXICAL_COMPARATOR = new Comparator<Object>() {
+    private static final Comparator<Date> DATE_COMPARATOR = new Comparator<Date>() {
 
         @Override
-        public int compare(Object o1, Object o2) {
-            return o1.toString().toLowerCase().compareTo(o2.toString().toLowerCase());
+        public int compare(Date o1, Date o2) {
+            return o1.compareTo(o2);
+        }
+    };
+    private static final Comparator<String> STRING_COMPARATOR = new Comparator<String>() {
+
+        @Override
+        public int compare(String o1, String o2) {
+            return o1.compareToIgnoreCase(o2);
         }
     };
     private Row[] viewToModel;
@@ -88,7 +102,7 @@ public final class TableSorter extends AbstractTableModel {
     private JTableHeader tableHeader;
     private MouseListener mouseListener;
     private TableModelListener tableModelListener;
-    private Map<Class, Comparator<Object>> columnComparators = new HashMap<Class, Comparator<Object>>();
+    private Set<Integer> columnsComparableOnlyWithString = new HashSet<Integer>();
     private List<Directive> sortingColumns = new ArrayList<Directive>();
 
     public TableSorter() {
@@ -151,7 +165,7 @@ public final class TableSorter extends AbstractTableModel {
     }
 
     public boolean isSorting() {
-        return sortingColumns.size() != 0;
+        return !sortingColumns.isEmpty();
     }
 
     private Directive getDirective(int column) {
@@ -200,24 +214,81 @@ public final class TableSorter extends AbstractTableModel {
         sortingStatusChanged();
     }
 
-    public void setColumnComparator(Class type, Comparator<Object> comparator) {
-        if (comparator == null) {
-            columnComparators.remove(type);
-        } else {
-            columnComparators.put(type, comparator);
-        }
-    }
-
-    protected Comparator<Object> getComparator(int column) {
+    protected int internalCompare(int column, Object o1, Object o2) {
         Class columnType = tableModel.getColumnClass(column);
-        Comparator<Object> comparator = (Comparator<Object>) columnComparators.get(columnType);
-        if (comparator != null) {
-            return comparator;
+        if (columnsComparableOnlyWithString.contains(column)) {
+            return STRING_COMPARATOR.compare(o1.toString(), o2.toString());
         }
-        if (Comparable.class.isAssignableFrom(columnType)) {
-            return COMPARABLE_COMAPRATOR;
+        if (String.class.isAssignableFrom(columnType)) {
+            boolean hasNumbers = false;
+            Number n1;
+            Number n2;
+            NumberFormat parser;
+            if (!hasNumbers) {
+                try {
+                    DateFormat dfParser = DateFormat.getDateTimeInstance();
+                    Date d1 = dfParser.parse((String) o1);
+                    Date d2 = dfParser.parse((String) o2);
+                    hasNumbers = true;
+                    return DATE_COMPARATOR.compare(d1, d2);
+                } catch (ParseException ex) {
+                    hasNumbers = false;
+                }
+            }
+            if (!hasNumbers) {
+                try {
+                    DateFormat dfParser = DateFormat.getDateInstance();
+                    Date d1 = dfParser.parse((String) o1);
+                    Date d2 = dfParser.parse((String) o2);
+                    hasNumbers = true;
+                    return DATE_COMPARATOR.compare(d1, d2);
+                } catch (ParseException ex) {
+                    hasNumbers = false;
+                }
+            }
+            if (!hasNumbers) {
+                try {
+                    parser = NumberFormat.getCurrencyInstance();
+                    n1 = parser.parse((String) o1);
+                    n2 = parser.parse((String) o2);
+                    hasNumbers = true;
+                    return NUMBER_COMPARATOR.compare(n1, n2);
+                } catch (ParseException ex) {
+                    hasNumbers = false;
+                }
+            }
+            if (!hasNumbers) {
+                try {
+                    parser = NumberFormat.getNumberInstance();
+                    n1 = parser.parse((String) o1);
+                    n2 = parser.parse((String) o2);
+                    hasNumbers = true;
+                    return NUMBER_COMPARATOR.compare(n1, n2);
+                } catch (ParseException ex) {
+                    hasNumbers = false;
+                }
+            }
+            if (!hasNumbers) {
+                try {
+                    parser = NumberFormat.getPercentInstance();
+                    n1 = parser.parse((String) o1);
+                    n2 = parser.parse((String) o2);
+                    hasNumbers = true;
+                    return NUMBER_COMPARATOR.compare(n1, n2);
+                } catch (ParseException ex) {
+                    hasNumbers = false;
+                }
+            }
+            if (!hasNumbers) {
+                columnsComparableOnlyWithString.add(column);
+                return STRING_COMPARATOR.compare((String) o1, (String) o2);
+            }
+        } else if (Number.class.isAssignableFrom(columnType)) {
+            return NUMBER_COMPARATOR.compare((Number) o1, (Number) o2);
+        } else if (Comparable.class.isAssignableFrom(columnType)) {
+            return ((Comparable) o1).compareTo(o2);
         }
-        return LEXICAL_COMPARATOR;
+        return o1.toString().toLowerCase().compareTo(o2.toString().toLowerCase());
     }
 
     private Row[] getViewToModel() {
@@ -251,10 +322,12 @@ public final class TableSorter extends AbstractTableModel {
     }
 
     // TableModel interface methods
+    @Override
     public int getRowCount() {
         return (tableModel == null) ? 0 : tableModel.getRowCount();
     }
 
+    @Override
     public int getColumnCount() {
         return (tableModel == null) ? 0 : tableModel.getColumnCount();
     }
@@ -274,6 +347,7 @@ public final class TableSorter extends AbstractTableModel {
         return tableModel.isCellEditable(modelIndex(row), column);
     }
 
+    @Override
     public Object getValueAt(int row, int column) {
         return tableModel.getValueAt(modelIndex(row), column);
     }
@@ -294,7 +368,7 @@ public final class TableSorter extends AbstractTableModel {
     }
 
     // Helper classes
-    private class Row implements Comparable {
+    private class Row implements Comparable<Row> {
 
         private int modelIndex;
 
@@ -303,12 +377,12 @@ public final class TableSorter extends AbstractTableModel {
         }
 
         @Override
-        public int compareTo(Object o) {
+        public int compareTo(Row o) {
             int row1 = modelIndex;
-            int row2 = ((Row) o).modelIndex;
+            int row2 = o.modelIndex;
 
-            for (Iterator it = sortingColumns.iterator(); it.hasNext();) {
-                Directive directive = (Directive) it.next();
+            for (Iterator<Directive> it = sortingColumns.iterator(); it.hasNext();) {
+                Directive directive = it.next();
                 int column = directive.column;
                 Object o1 = tableModel.getValueAt(row1, column);
                 Object o2 = tableModel.getValueAt(row2, column);
@@ -322,7 +396,7 @@ public final class TableSorter extends AbstractTableModel {
                 } else if (o2 == null) {
                     comparison = 1;
                 } else {
-                    comparison = getComparator(column).compare(o1, o2);
+                    comparison = internalCompare(column, o1, o2);
                 }
                 if (comparison != 0) {
                     return directive.direction == DESCENDING ? -comparison : comparison;
@@ -334,6 +408,7 @@ public final class TableSorter extends AbstractTableModel {
 
     private class TableModelHandler implements TableModelListener {
 
+        @Override
         public void tableChanged(TableModelEvent e) {
             // If we're not sorting by anything, just pass the event along.
             if (!isSorting()) {
@@ -387,6 +462,7 @@ public final class TableSorter extends AbstractTableModel {
 
     private class MouseHandler extends MouseAdapter {
 
+        @Override
         public void mouseClicked(MouseEvent e) {
             JTableHeader h = (JTableHeader) e.getSource();
             TableColumnModel columnModel = h.getColumnModel();
@@ -418,6 +494,7 @@ public final class TableSorter extends AbstractTableModel {
             this.priority = priority;
         }
 
+        @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             Color color = c == null ? Color.GRAY : c.getBackground();
             // In a compound sort, make each succesive triangle 20%
@@ -451,10 +528,12 @@ public final class TableSorter extends AbstractTableModel {
             g.translate(-x, -y);
         }
 
+        @Override
         public int getIconWidth() {
             return size;
         }
 
+        @Override
         public int getIconHeight() {
             return size;
         }
@@ -468,6 +547,7 @@ public final class TableSorter extends AbstractTableModel {
             this.tableCellRenderer = tableCellRenderer;
         }
 
+        @Override
         public Component getTableCellRendererComponent(JTable table,
                 Object value,
                 boolean isSelected,
@@ -486,6 +566,12 @@ public final class TableSorter extends AbstractTableModel {
         }
     }
 
+    /**
+     * Handles two values: the sorting column and the sorting direction
+     *     DESCENDING = -1;
+     *     NOT_SORTED = 0;
+     *     ASCENDING = 1;
+     */
     private static class Directive {
 
         private int column;
