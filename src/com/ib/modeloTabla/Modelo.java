@@ -13,6 +13,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.text.JTextComponent;
 
 public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
@@ -94,6 +95,11 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
                 model.fireTableDataChanged();
                 lsm.setSelectionInterval(firstSelectedRow, lastSelectedRow);
             }
+            if (table.getColumnCount() > 1) {//TODO: CORREGIR ESTO PARA SIMPLIFICAR Y NO REPETIR CODIGO
+                autoResizeColWidth(table);
+            } else {
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            }
             return model;
         } else {
             Modelo<? extends ConvierteAVector> m;
@@ -168,23 +174,23 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         double usedWidth = 0;
         double margin = 5;
         DefaultTableColumnModel colModel = (DefaultTableColumnModel) table.getColumnModel();
-        for (int columna = 0; columna < table.getColumnCount(); columna++) {
-            TableColumn col = colModel.getColumn(columna);
+        for (int columnIndex = 0; columnIndex < table.getColumnCount(); columnIndex++) {
+            TableColumn column = colModel.getColumn(columnIndex);
             double width = 0;
-            TableCellRenderer renderer = col.getHeaderRenderer();
+            TableCellRenderer renderer = column.getHeaderRenderer();
             if (renderer == null) {
                 renderer = table.getTableHeader().getDefaultRenderer();
             }
-            Component comp = renderer.getTableCellRendererComponent(table, col.getHeaderValue(), false, false, 0, 0);
+            Component comp = renderer.getTableCellRendererComponent(table, column.getHeaderValue(), false, false, 0, 0);
             width = comp.getPreferredSize().getWidth();
             // Get maximum width of column data
             for (int r = 0; r < table.getRowCount(); r++) {
-                renderer = table.getCellRenderer(r, columna);
-                comp = renderer.getTableCellRendererComponent(table, table.getValueAt(r, columna), false, false, r, columna);
+                renderer = table.getCellRenderer(r, columnIndex);
+                comp = renderer.getTableCellRendererComponent(table, table.getValueAt(r, columnIndex), false, false, r, columnIndex);
                 width = Math.max(width, comp.getPreferredSize().getWidth());
             }
             width += 2 * margin;
-            col.setPreferredWidth((int) width);
+            column.setPreferredWidth((int) width);
             usedWidth += width;
         }
         double restar = 0;
@@ -195,6 +201,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         if (restante > 0) {
             for (int i = 0; i < table.getColumnCount(); i++) {
                 TableColumn col = colModel.getColumn(i);
+                
                 col.setPreferredWidth(col.getPreferredWidth() + restante);
                 usedWidth += restante;
             }
