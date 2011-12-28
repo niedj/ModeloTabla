@@ -13,7 +13,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
-import javax.swing.text.JTextComponent;
+import javax.swing.table.TableModel;
 
 public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
@@ -268,7 +268,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
      * @param col The column to check for the condition
      * @param modelo Table's model (use table.getModel() method)
      */
-    public static void filtrar(String filtro, int col, AbstractTableModel modelo) {
+    public static void filtrar(String filtro, int col, TableModel modelo) {
         TableSorter ts = (TableSorter) modelo;
         Modelo<ConvierteAVector> m = (Modelo) ts.getTableModel();
         if (filtro == null || filtro.equals("")) {
