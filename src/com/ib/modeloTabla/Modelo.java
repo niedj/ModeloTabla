@@ -284,8 +284,46 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
                 String dato = String.valueOf(uno.getDatos().get(col));
                 dato = dato.toLowerCase();
                 filtro = filtro.toLowerCase();
-                CharSequence filtros = filtro.subSequence(0, filtro.length());
-                if (dato.contains(filtros)) {
+                if (dato.contains(filtro)) {
+                    m.getDatos().add(uno);
+                }
+            }
+            m.fireTableDataChanged();
+        }
+    }
+    /**
+     * Modifies the original model to display only the values that matches more than one filter (Does not affect the data)
+     * @param filters An array of text to use as filter
+     * @param columns An array of columns to check for the condition
+     * @param modelo Table's model (use table.getModel() method)
+     */
+    public static void filtrar(String[] filters, int[] columns, TableModel modelo) {
+        TableSorter ts = (TableSorter) modelo;
+        Modelo<ConvierteAVector> m = (Modelo) ts.getTableModel();
+        if (filters == null || filters.length == 0) {
+            removerFiltro(m);
+        } else {
+            if(filters.length != columns.length){
+                throw new IllegalArgumentException("Filters and columns vectors have different sizes");
+            }
+            if (m.isPrimeraVez()) {
+                m.setPrimeraVez(false);
+                m.setTodos(m.getDatos());
+            }
+            m.setDatos(new ArrayList<ConvierteAVector>());
+            for (Iterator<ConvierteAVector> it = m.getTodos().iterator(); it.hasNext();) {
+                ConvierteAVector uno = it.next();
+                boolean include = true;
+                String[] data = new String[columns.length];
+                for (int i = 0; i < columns.length; i++) {
+                    int j = columns[i];
+                    data[i] = String.valueOf(uno.getDatos().get(j)).toLowerCase();
+                    filters[i] = filters[i].toLowerCase();
+                    if(filters[i] != null && !filters[i].isEmpty() && !data[i].contains(filters[i])){
+                        include = false;
+                    }
+                }
+                if (include) {
                     m.getDatos().add(uno);
                 }
             }
