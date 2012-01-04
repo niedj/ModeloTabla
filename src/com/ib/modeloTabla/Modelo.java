@@ -66,7 +66,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
      * @return 
      * @throws IllegalArgumentException if the parameter table==null
      */
-    public static <T extends ConvierteAVector> AbstractTableModel crearModelo(List<T> datos, JTable table) {
+    public static <T extends ConvierteAVector> void crearModelo(List<T> datos, JTable table) {
         if (table == null) {
             throw new IllegalArgumentException("The given jTable has not been initialized");
         }
@@ -100,7 +100,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             } else {
                 table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
             }
-            return model;
+//            return model;
         } else {
             Modelo<? extends ConvierteAVector> m;
             if (datos != null && !datos.isEmpty()) {
@@ -117,7 +117,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             } else {
                 table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
             }
-            return tableSorter;
+//            return tableSorter;
         }
     }
 
@@ -129,7 +129,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
      * @return 
      * @throws IllegalArgumentException if the parameter table==null
      */
-    public static <T extends ConvierteAVector> AbstractTableModel crearModeloSinSorter(List<T> datos, JTable table) {
+    public static <T extends ConvierteAVector> void crearModeloSinSorter(List<T> datos, JTable table) {
         if (table == null) {
             throw new IllegalArgumentException("The given jTable has not been initialized");
         }
@@ -147,7 +147,7 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         } else {
             table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         }
-        return m;
+//        return m;
     }
 
     /**
