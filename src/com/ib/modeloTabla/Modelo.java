@@ -91,10 +91,10 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
                 model.fireTableStructureChanged();
             } else {
                 model.fireTableDataChanged();
-                if (lastSelectedRow < datos.size()) {
+                if (lastSelectedRow < model.getDatos().size()) {
                     lsm.setSelectionInterval(firstSelectedRow, lastSelectedRow);
                 } else {
-                    lsm.setSelectionInterval(datos.size()-1, datos.size()-1);
+                    lsm.setSelectionInterval(model.getDatos().size()-1, model.getDatos().size()-1);
                 }
 
             }
