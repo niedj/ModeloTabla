@@ -13,33 +13,12 @@ import javax.swing.table.*;
 
 public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
-    private List<T> datos;
-    protected List<T> todos;
-    protected List<String> columnas = new ArrayList<String>();
+    private List<T> data;
+    protected List<T> allData;
+    protected List<String> columns = new ArrayList<String>();
     protected boolean primeraVez = true;
-    protected static ConvierteAVector datosNulos = new ConvierteAVector() {
-
-        @Override
-        public List<Object> getDatos() {
-            List<Object> lista = new ArrayList<Object>();
-            lista.add("No se encontraron datos");
-            return lista;
-        }
-
-        @Override
-        public ArrayList<String> getTitulos() {
-            ArrayList<String> lista = new ArrayList<String>();
-            lista.add("No se encontraron datos");
-            return lista;
-        }
-
-        @Override
-        public void setValueAt(int posicion, Object value) {
-            throw new UnsupportedOperationException("Not supported yet.");
-        }
-    };
-    protected static List<ConvierteAVector> listaVacia = new ArrayList<ConvierteAVector>();
-    protected boolean cellEditable = false;
+    protected static final List<ConvierteAVector> emptyList = new ArrayList<ConvierteAVector>();
+    protected static final List<String> emptyColumns = new ArrayList<String>();
 
     protected Modelo() {
         primeraVez = true;
@@ -47,8 +26,12 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
     protected Modelo(List<T> datos) {
         this();
-        if (datos != null && datos.size() > 0) {
-            setColumnas(datos.get(0).getTitulos());
+        if (datos != null) {
+            if (datos.isEmpty()) {
+                setColumnas(emptyColumns);
+            } else {
+                setColumnas(datos.get(0).getTitulos());
+            }
             setDatos(datos);
             setTodos(datos);
         }
@@ -76,11 +59,9 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             TableSorter sorter = (TableSorter) table.getModel();
             Modelo model = (Modelo) sorter.getTableModel();
             if (datos == null || datos.isEmpty()) {
-                listaVacia = new ArrayList<ConvierteAVector>();
-                listaVacia.add(datosNulos);
-                model.setDatos(listaVacia);
-                model.setTodos(listaVacia);
-                model.setColumnas(listaVacia.get(0).getTitulos());
+                model.setDatos(emptyList);
+                model.setTodos(emptyList);
+                model.setColumnas(emptyColumns);
             } else {
                 model.setDatos(datos);
                 model.setTodos(datos);
@@ -91,27 +72,25 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
                 model.fireTableStructureChanged();
             } else {
                 model.fireTableDataChanged();
-                if (lastSelectedRow < model.getDatos().size()) {
-                    lsm.setSelectionInterval(firstSelectedRow, lastSelectedRow);
-                } else {
-                    lsm.setSelectionInterval(model.getDatos().size()-1, model.getDatos().size()-1);
+                if (!model.getDatos().isEmpty()) {
+                    if (lastSelectedRow < model.getDatos().size()) {
+                        lsm.setSelectionInterval(firstSelectedRow, lastSelectedRow);
+                    } else {
+                        lsm.setSelectionInterval(model.getDatos().size() - 1, model.getDatos().size() - 1);
+                    }
                 }
-
             }
             if (table.getColumnCount() > 1) {//TODO: CORREGIR ESTO PARA SIMPLIFICAR Y NO REPETIR CODIGO
                 autoResizeColWidth(table);
             } else {
                 table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
             }
-//            return model;
         } else {
             Modelo<? extends ConvierteAVector> m;
-            if (datos != null && !datos.isEmpty()) {
+            if (datos != null) {
                 m = new Modelo<T>(datos);
             } else {
-                listaVacia = new ArrayList<ConvierteAVector>();
-                listaVacia.add(datosNulos);
-                m = new Modelo<ConvierteAVector>(listaVacia);
+                m = new Modelo<ConvierteAVector>(emptyList);
             }
             TableSorter tableSorter = new TableSorter(m, table.getTableHeader());
             table.setModel(tableSorter);
@@ -120,7 +99,6 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             } else {
                 table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
             }
-//            return tableSorter;
         }
     }
 
@@ -139,12 +117,10 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             throw new IllegalArgumentException("The given jTable has not been initialized");
         }
         Modelo<? extends ConvierteAVector> m;
-        if (datos != null && !datos.isEmpty()) {
+        if (datos != null) {
             m = new Modelo<T>(datos);
         } else {
-            listaVacia = new ArrayList<ConvierteAVector>();
-            listaVacia.add(datosNulos);
-            m = new Modelo<ConvierteAVector>(listaVacia);
+            m = new Modelo<ConvierteAVector>(emptyList);
         }
         table.setModel(m);
         if (table.getColumnCount() > 1) {
@@ -152,7 +128,6 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
         } else {
             table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         }
-//        return m;
     }
 
     /**
@@ -216,12 +191,20 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
     @Override
     public int getRowCount() {
-        return getDatos().size();
+        if (getDatos() == null) {
+            return 0;
+        } else {
+            return getDatos().size();
+        }
     }
 
     @Override
     public int getColumnCount() {
-        return getDatos().get(0).getTitulos().size();
+        if (getDatos() == null || getDatos().isEmpty()) {
+            return 0;
+        } else {
+            return getDatos().get(0).getTitulos().size();
+        }
     }
 
     @Override
@@ -250,7 +233,11 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
 
     @Override
     public String getColumnName(int col) {
-        return getColumnas().get(col);
+        if (getColumnas() == null || getColumnas().isEmpty()) {
+            return "";
+        } else {
+            return getColumnas().get(col);
+        }
     }
 
     @Override
@@ -259,13 +246,9 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
             Object dato = getValueAt(row, col);
             this.getDatos().get(row).setValueAt(col, dato);
             return true;
-        } catch (UnsupportedOperationException e) {
+        } catch (Throwable e) {
             return false;
         }
-    }
-
-    public void setCellEditable(boolean editable) {
-        this.cellEditable = editable;
     }
 
     /**
@@ -355,11 +338,11 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
     }
 
     public List<String> getColumnas() {
-        return this.columnas;
+        return this.columns;
     }
 
     public final void setColumnas(List<String> columnas) {
-        this.columnas = columnas;
+        this.columns = columnas;
     }
 
     public boolean isPrimeraVez() {
@@ -371,24 +354,24 @@ public class Modelo<T extends ConvierteAVector> extends AbstractTableModel {
     }
 
     public List<T> getTodos() {
-        return todos;
+        return allData;
     }
 
     public final void setTodos(List<T> todos) {
-        this.todos = todos;
+        this.allData = todos;
     }
 
     /**
      * @return the datos
      */
     public List<T> getDatos() {
-        return datos;
+        return data;
     }
 
     /**
      * @param datos the datos to set
      */
     public final void setDatos(List<T> datos) {
-        this.datos = datos;
+        this.data = datos;
     }
 }
